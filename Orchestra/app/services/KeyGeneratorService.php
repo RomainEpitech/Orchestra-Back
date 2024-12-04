@@ -10,7 +10,7 @@ class KeyGeneratorService
     /**
      * Generate a unique encrypted key for enterprise
      */
-    public function generateUniqueKey(string $name): string
+    public static function generateUniqueKey(string $name): string
     {
         do {
             $baseKey = Str::slug($name);
