@@ -10,6 +10,27 @@ class ModuleLimit extends Model
 {
     use HasUuids;
 
+    /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'uuid';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
+
+    /**
+     * The data type of the ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
+
     protected $fillable = [
         'module_uuid',
         'free_limit'

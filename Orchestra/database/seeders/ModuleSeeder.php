@@ -32,22 +32,20 @@ class ModuleSeeder extends Seeder
                     'availableColors' => ['#FF0000', '#00FF00', '#0000FF']
                 ]
             ],
-            // Autres modules...
         ];
 
         foreach ($modules as $moduleData) {
             $limits = $moduleData['limits'];
             unset($moduleData['limits']);
 
-            $module = Module::updateOrCreate(
+            $module = Module::firstOrCreate(
                 ['key' => $moduleData['key']],
                 $moduleData
             );
 
-            ModuleLimit::updateOrCreate(
-                ['module_uuid' => $module->uuid],
-                ['free_limit' => $limits]
-            );
+            $moduleLimit = ModuleLimit::firstOrNew(['module_uuid' => $module->uuid]);
+            $moduleLimit->free_limit = $limits;
+            $moduleLimit->save();
         }
     }
 }
