@@ -12,43 +12,16 @@ class Enterprise extends Model
 {
     use HasUuids;
 
-    /**
-     * The primary key for the model.
-     *
-     * @var string
-     */
     protected $primaryKey = 'uuid';
-
-    /**
-     * Indicates if the IDs are UUIDs.
-     *
-     * @var bool
-     */
     public $incrementing = false;
-
-    /**
-     * The data type of the primary key ID.
-     *
-     * @var string
-     */
     protected $keyType = 'string';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
     protected $fillable = [
         'name',
         'key',
         'status',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'status' => 'boolean',
     ];
@@ -61,6 +34,17 @@ class Enterprise extends Model
         return $this->hasMany(User::class, 'enterprise_uuid', 'uuid');
     }
 
+    /**
+     * Get the roles for the enterprise.
+     */
+    public function roles(): HasMany
+    {
+        return $this->hasMany(Role::class, 'enterprise_uuid', 'uuid');
+    }
+
+    /**
+     * Get the modules for the enterprise.
+     */
     public function modules(): BelongsToMany
     {
         return $this->belongsToMany(Module::class, 'enterprise_modules', 'enterprise_uuid', 'module_uuid')
@@ -68,6 +52,9 @@ class Enterprise extends Model
                     ->withTimestamps();
     }
 
+    /**
+     * Get the purchased modules for the enterprise.
+     */
     public function purchasedModules(): BelongsToMany
     {
         return $this->belongsToMany(Module::class, 'enterprise_purchased_modules', 'enterprise_uuid', 'module_uuid')
@@ -75,11 +62,17 @@ class Enterprise extends Model
                     ->withTimestamps();
     }
 
+    /**
+     * Get the subscriptions for the enterprise.
+     */
     public function subscriptions(): HasMany
     {
         return $this->hasMany(EnterpriseSubscription::class, 'enterprise_uuid', 'uuid');
     }
 
+    /**
+     * Check if enterprise has an active subscription.
+     */
     public function hasActiveSubscription(): bool
     {
         return $this->subscriptions()
