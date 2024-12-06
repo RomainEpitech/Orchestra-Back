@@ -70,7 +70,7 @@ class EnterpriseController extends Controller
                 'users' => function($query) {
                     $query->with('role:uuid,name,authority,color_hex');
                 },
-                'purchasedModules',  // Simplification ici
+                'purchasedModules',
                 'subscriptions' => function($query) {
                     $query->whereNull('expires_at')
                         ->orWhere('expires_at', '>', now());
