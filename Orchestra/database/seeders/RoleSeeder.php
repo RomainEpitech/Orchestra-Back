@@ -47,6 +47,12 @@ class RoleSeeder extends Seeder {
                         'edit' => true,
                         'delete' => true,
                         'approve' => true
+                    ],
+                    'taches' => [
+                        'read' => true,
+                        'create' => true,
+                        'edit' => true,
+                        'delete' => true
                     ]
                 ],
                 'is_default' => 1,
@@ -90,6 +96,12 @@ class RoleSeeder extends Seeder {
                         'edit' => false,
                         'delete' => false,
                         'approve' => false
+                    ],
+                    'taches' => [
+                        'read' => true,
+                        'create' => true,
+                        'edit' => false,
+                        'delete' => false
                     ]
                 ],
                 'is_default' => 1,
