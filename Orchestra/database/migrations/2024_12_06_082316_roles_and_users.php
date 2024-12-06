@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('roles', function (Blueprint $table) {
             $table->uuid('uuid')->primary();
-            $table->uuid('enterprise_uuid');
+            $table->uuid('enterprise_uuid')->nullable();
             $table->string('name');
             $table->json('authority')->nullable();
             $table->string('color_hex', 7);
+            $table->boolean('is_default')->default(false);
             $table->timestamps();
 
             $table->foreign('enterprise_uuid')
@@ -48,8 +49,6 @@ return new class extends Migration
                 ->references('uuid')
                 ->on('enterprises')
                 ->onDelete('cascade');
-
-            $table->unique('email');
         });
     }
 
@@ -58,8 +57,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('roles');
-
         Schema::table('users', function (Blueprint $table) {
             $table->dropForeign(['role_uuid']);
             $table->dropForeign(['enterprise_uuid']);
@@ -80,5 +77,7 @@ return new class extends Migration
             $table->string('name');
             $table->rememberToken();
         });
+
+        Schema::dropIfExists('roles');
     }
 };
