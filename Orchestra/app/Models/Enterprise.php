@@ -58,7 +58,7 @@ class Enterprise extends Model
     public function purchasedModules(): BelongsToMany
     {
         return $this->belongsToMany(Module::class, 'enterprise_purchased_modules', 'enterprise_uuid', 'module_uuid')
-                    ->withPivot('purchased_amount', 'purchased_at')
+                    ->withPivot('purchased_at')
                     ->withTimestamps();
     }
 

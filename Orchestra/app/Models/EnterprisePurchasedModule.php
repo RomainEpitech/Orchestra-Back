@@ -13,12 +13,10 @@ class EnterprisePurchasedModule extends Model
     protected $fillable = [
         'enterprise_uuid',
         'module_uuid',
-        'purchased_amount',
         'purchased_at'
     ];
 
     protected $casts = [
-        'purchased_amount' => 'decimal:2',
         'purchased_at' => 'datetime'
     ];
 
