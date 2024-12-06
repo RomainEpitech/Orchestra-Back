@@ -12,6 +12,14 @@ class ModuleSeeder extends Seeder
     {
         $modules = [
             [
+                'name' => 'Entreprise',
+                'description' => 'Gestion de vos modules Orchestra',
+                'key' => 'entreprise',
+                'is_core' => true,
+                'purchase_price' => null,
+                'limits' => ''
+            ],
+            [
                 'name' => 'Personnel',
                 'description' => 'Gérez vos employés, leurs absences et leurs informations',
                 'key' => 'personnel',
@@ -22,7 +30,7 @@ class ModuleSeeder extends Seeder
                 ]
             ],
             [
-                'name' => 'Roles & Permissions',
+                'name' => 'Roles',
                 'description' => 'Gérez les rôles et permissions de votre entreprise',
                 'key' => 'roles',
                 'is_core' => true,
@@ -32,6 +40,22 @@ class ModuleSeeder extends Seeder
                     'availableColors' => ['#FF0000', '#00FF00', '#0000FF']
                 ]
             ],
+            [
+                'name' => 'Events',
+                'description' => 'Plannifiez vos evenements et réservations de salles.',
+                'key' => 'events',
+                'is_core' => false,
+                'purchase_price' => 200,
+                'limits' => ''
+            ],
+            [
+                'name' => 'Absence',
+                'description' => 'Gestion de demandes d\'absences avec envoie de mail pour confirmation',
+                'key' => 'absence',
+                'is_core' => false,
+                'purchase_price' => 174.99,
+                'limits' => ''
+            ]
         ];
 
         foreach ($modules as $moduleData) {
