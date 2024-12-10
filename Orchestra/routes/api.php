@@ -21,5 +21,7 @@ Route::middleware(['auth:sanctum', CheckEnterpriseKey::class, CheckEnterpriseMem
             ->group(function () {
                 Route::put('/enterprise', [EnterpriseController::class, 'update']);
             });
+
+        Route::delete('/enterprise', [EnterpriseController::class, 'destroy']);
     }
 );

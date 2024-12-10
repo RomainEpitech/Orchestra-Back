@@ -41,6 +41,7 @@ class EnterpriseRegistrationService
                 'status' => true
             ]);
 
+            $enterprise->update(['owner_uuid' => $admin->uuid]);
             $this->moduleService->assignModules($enterprise);
 
             $enterprise->load('modules');

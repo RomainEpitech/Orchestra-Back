@@ -21,6 +21,7 @@ class Enterprise extends Model
     protected $fillable = [
         'name',
         'key',
+        'owner_uuid',
         'status',
     ];
 
@@ -34,6 +35,16 @@ class Enterprise extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class, 'enterprise_uuid', 'uuid');
+    }
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_uuid', 'uuid');
+    }
+
+    public function isOwnedBy(User $user): bool
+    {
+        return $this->owner_uuid === $user->uuid;
     }
 
     /**

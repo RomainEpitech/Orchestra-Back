@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ModuleLimit;
 use App\Services\EnterpriseRegistrationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -149,6 +150,48 @@ class EnterpriseController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error updating enterprise name',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function destroy(Request $request): JsonResponse
+    {
+        try {
+            $enterprise = $request->enterprise;
+            $user = $request->user();
+
+            if (!$enterprise->isOwnedBy($user)) {
+                return response()->json([
+                    'message' => 'Only the owner can delete this enterprise'
+                ], 403);
+            }
+
+            DB::transaction(function () use ($enterprise) {
+                // Supprimer d'abord toutes les relations
+                $enterprise->modules()->detach(); // Supprime les liaisons avec les modules
+                $enterprise->purchasedModules()->detach(); // Supprime les modules achetés
+                
+                // Supprime les abonnements
+                $enterprise->subscriptions()->delete();
+                
+                // Supprime les rôles (qui supprimera aussi les permissions)
+                $enterprise->roles()->delete();
+                
+                // Supprime les utilisateurs
+                $enterprise->users()->delete();
+                
+                // Enfin, supprime l'entreprise
+                $enterprise->delete();
+            });
+
+            return response()->json([
+                'message' => 'Enterprise deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error deleting enterprise',
                 'error' => $e->getMessage()
             ], 500);
         }
