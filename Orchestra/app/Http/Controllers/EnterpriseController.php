@@ -62,20 +62,38 @@ class EnterpriseController extends Controller
     {
         try {
             $enterprise = $request->enterprise;
-
+            
+            // Charge les relations nécessaires pour les statistiques
             $enterprise->load([
-                'modules' => function($query) {
-                    $query->with('limits');
-                },
-                'users' => function($query) {
-                    $query->with('role:uuid,name,authority,color_hex');
-                },
-                'purchasedModules',
-                'subscriptions' => function($query) {
-                    $query->whereNull('expires_at')
-                        ->orWhere('expires_at', '>', now());
-                }
+                'modules' => fn($q) => $q->where('is_activated', true),
+                'users',
+                'subscriptions' => fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now())
             ]);
+
+            // Prépare les statistiques pour chaque module activé
+            $statistics = [
+                'total_users' => $enterprise->users->count(),
+                'active_modules' => $enterprise->modules->count(),
+            ];
+
+            // Ajoute des statistiques selon les modules activés
+            if ($enterprise->modules->contains('key', 'events')) {
+                $statistics['upcoming_events'] = $enterprise->events()
+                    ->where('start_at', '>', now())
+                    ->count();
+            }
+
+            if ($enterprise->modules->contains('key', 'absence')) {
+                $statistics['pending_absences'] = $enterprise->absences()
+                    ->where('status', 0)
+                    ->count();
+            }
+
+            if ($enterprise->modules->contains('key', 'tasks')) {
+                $statistics['ongoing_tasks'] = $enterprise->tasks()
+                    ->whereNull('ended_at')
+                    ->count();
+            }
 
             return response()->json([
                 'enterprise' => [
@@ -84,47 +102,53 @@ class EnterpriseController extends Controller
                     'status' => $enterprise->status,
                     'created_at' => $enterprise->created_at,
                 ],
-                'modules' => $enterprise->modules->map(function($module) {
-                    return [
-                        'uuid' => $module->uuid,
-                        'name' => $module->name,
-                        'key' => $module->key,
-                        'is_core' => $module->is_core,
-                        'purchase_price' => $module->purchase_price,
-                        'is_activated' => $module->pivot->is_activated,
-                        'limits' => $module->limits?->free_limit
-                    ];
-                }),
-                'users' => $enterprise->users->map(function($user) {
-                    return [
-                        'uuid' => $user->uuid,
-                        'first_name' => $user->first_name,
-                        'last_name' => $user->last_name,
-                        'email' => $user->email,
-                        'status' => $user->status,
-                        'joined_at' => $user->joined_at,
-                        'role' => [
-                            'name' => $user->role->name,
-                            'color_hex' => $user->role->color_hex
-                        ]
-                    ];
-                }),
+                'active_modules' => $enterprise->modules->pluck('key'),
                 'subscription' => [
                     'active' => $enterprise->subscriptions->isNotEmpty(),
                     'expires_at' => $enterprise->subscriptions->first()?->expires_at
                 ],
-                'purchased_modules' => $enterprise->purchasedModules->map(function($module) {
-                    return [
-                        'key' => $module->key,
-                        'price' => $module->purchase_price,
-                        'purchased_at' => $module->pivot->purchased_at
-                    ];
-                })
+                'statistics' => $statistics
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error retrieving enterprise data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update enterprsie data
+     */
+    public function update(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|min:2|max:255'
+            ]);
+
+            $enterprise = $request->enterprise;
+            $enterprise->update([
+                'name' => $validated['name']
+            ]);
+
+            return response()->json([
+                'message' => 'Enterprise name updated successfully',
+                'enterprise' => [
+                    'uuid' => $enterprise->uuid,
+                    'name' => $enterprise->name
+                ]
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error updating enterprise name',
                 'error' => $e->getMessage()
             ], 500);
         }
