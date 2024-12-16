@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EnterpriseController;
+use App\Http\Controllers\PersonnelModuleController;
 use App\Http\Middleware\CheckEnterpriseKey;
 use App\Http\Middleware\CheckEnterpriseMembership;
 use App\Http\Middleware\CheckModuleAuthority;
@@ -23,5 +24,10 @@ Route::middleware(['auth:sanctum', CheckEnterpriseKey::class, CheckEnterpriseMem
             });
 
         Route::delete('/enterprise', [EnterpriseController::class, 'destroy']);
+
+        Route::middleware([CheckModuleAuthority::parameters('personnel', 'create')])
+            ->group(function () {
+                Route::post('/enterprise/newUser', [PersonnelModuleController::class, 'registerPersonnal']);
+            });
     }
 );
