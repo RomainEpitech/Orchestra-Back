@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Role;
+use App\Services\UserFilterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,10 +14,17 @@ use Illuminate\Validation\ValidationException;
 
 class PersonnelModuleController extends Controller
 {
+    protected UserFilterService $filterService;
+
+    public function __construct(UserFilterService $filterService)
+    {
+        $this->filterService = $filterService;
+    }
+
     /**
      * Register new User
      */
-    public function registerPersonnal(Request $request): JsonResponse
+    public function registerPersonnel(Request $request): JsonResponse
     {
         try {
             // 1. Validation des données
@@ -98,6 +106,64 @@ class PersonnelModuleController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error creating user',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all personnel
+     */
+    public function getPersonnel(Request $request): JsonResponse 
+    {
+        try {
+            // Valider les paramètres de filtrage
+            $filters = $request->validate([
+                'role_uuid' => 'sometimes|uuid|exists:roles,uuid',
+                'email' => 'sometimes|string',
+                'name' => 'sometimes|string',
+                'status' => 'sometimes|boolean',
+                'sort_by' => 'sometimes|string|in:first_name,last_name,email,joined_at',
+                'sort_direction' => 'sometimes|string|in:asc,desc'
+            ]);
+
+            // Construire la requête
+            $query = $request->enterprise->users()->with(['role:uuid,name,color_hex']);
+            
+            // Appliquer les filtres
+            $query = $this->filterService->applyFilters($query, $filters);
+
+            // Récupérer les résultats
+            $users = $query->get()->map(function($user) {
+                return [
+                    'uuid' => $user->uuid,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'status' => $user->status,
+                    'joined_at' => $user->joined_at->format('Y-m-d'),
+                    'leave_days' => $user->leave_days,
+                    'role' => [
+                        'name' => $user->role->name,
+                        'color_hex' => $user->role->color_hex
+                    ]
+                ];
+            });
+
+            return response()->json([
+                'total_users' => $users->count(),
+                'filters_applied' => array_keys($filters),
+                'users' => $users
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Invalid filters',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving personnel',
                 'error' => $e->getMessage()
             ], 500);
         }

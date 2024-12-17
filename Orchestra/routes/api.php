@@ -27,7 +27,12 @@ Route::middleware(['auth:sanctum', CheckEnterpriseKey::class, CheckEnterpriseMem
 
         Route::middleware([CheckModuleAuthority::parameters('personnel', 'create')])
             ->group(function () {
-                Route::post('/enterprise/newUser', [PersonnelModuleController::class, 'registerPersonnal']);
+                Route::post('/enterprise/newUser', [PersonnelModuleController::class, 'registerPersonnel']);
+            });
+
+        Route::middleware([CheckModuleAuthority::parameters('personnel', 'read')])
+            ->group(function () {
+                Route::get('/enterprise/getPersonnel', [PersonnelModuleController::class, 'getPersonnel']);
             });
     }
 );
