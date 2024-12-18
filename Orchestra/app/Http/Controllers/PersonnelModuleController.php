@@ -119,7 +119,7 @@ class PersonnelModuleController extends Controller
         try {
             // Valider les paramètres de filtrage
             $filters = $request->validate([
-                'role_uuid' => 'sometimes|uuid|exists:roles,uuid',
+                'role' => 'sometimes|string|exists:roles,name',
                 'email' => 'sometimes|string',
                 'name' => 'sometimes|string',
                 'status' => 'sometimes|boolean',

@@ -7,27 +7,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UserFilterService
 {
-    /**
-     * Applique les filtres à la requête des utilisateurs
-     * @param Builder|HasMany $query
-     */
     public function applyFilters(Builder|HasMany $query, array $filters): Builder|HasMany
     {
         // Filtre par rôle
-        if (isset($filters['role_uuid'])) {
-            $query->where('role_uuid', $filters['role_uuid']);
-        }
-
-        // Filtre par email
-        if (isset($filters['email'])) {
-            $query->where('email', 'LIKE', "%{$filters['email']}%");
-        }
-
-        // Filtre par nom
-        if (isset($filters['name'])) {
-            $query->where(function($q) use ($filters) {
-                $q->where('first_name', 'LIKE', "%{$filters['name']}%")
-                    ->orWhere('last_name', 'LIKE', "%{$filters['name']}%");
+        if (isset($filters['role'])) {
+            $query->whereHas('role', function($q) use ($filters) {
+                $q->where('name', $filters['role']);
             });
         }
 
@@ -36,13 +21,18 @@ class UserFilterService
             $query->where('status', $filters['status']);
         }
 
-        // Tri
-        $sortField = $filters['sort_by'] ?? 'first_name';
+        // Tri alphabétique
+        $sortField = $filters['sort_by'] ?? 'last_name';  // Par défaut, tri par nom
         $sortDirection = $filters['sort_direction'] ?? 'asc';
         
-        $allowedSortFields = ['first_name', 'last_name', 'email', 'joined_at'];
+        $allowedSortFields = ['last_name', 'first_name'];
         if (in_array($sortField, $allowedSortFields)) {
-            $query->orderBy($sortField, $sortDirection === 'desc' ? 'desc' : 'asc');
+            $query->orderBy($sortField, $sortDirection);
+            
+            // Si on trie par nom, on ajoute un tri secondaire par prénom
+            if ($sortField === 'last_name') {
+                $query->orderBy('first_name', $sortDirection);
+            }
         }
 
         return $query;
