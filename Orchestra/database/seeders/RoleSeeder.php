@@ -38,7 +38,6 @@ class RoleSeeder extends Seeder {
                     'enterprise' => [
                         'read' => true,
                         'edit' => true,
-                        'delete' => true,
                         'manage_modules' => true,
                         'manage_subscription' => true
                     ],
@@ -88,7 +87,6 @@ class RoleSeeder extends Seeder {
                     'enterprise' => [
                         'read' => false,
                         'edit' => false,
-                        'delete' => false,
                         'manage_modules' => false,
                         'manage_subscription' => false
                     ],
