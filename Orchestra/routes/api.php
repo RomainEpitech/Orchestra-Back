@@ -9,7 +9,7 @@ use App\Http\Middleware\CheckModuleAuthority;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
-Route::post('/newEnterprise', [EnterpriseController::class, 'store']);
+Route::post('/new-enterprise', [EnterpriseController::class, 'store']);
 
 Route::middleware(['auth:sanctum', CheckEnterpriseKey::class, CheckEnterpriseMembership::class])
     ->group(function () {
@@ -27,12 +27,12 @@ Route::middleware(['auth:sanctum', CheckEnterpriseKey::class, CheckEnterpriseMem
 
         Route::middleware([CheckModuleAuthority::parameters('personnel', 'create')])
             ->group(function () {
-                Route::post('/enterprise/newUser', [PersonnelModuleController::class, 'registerPersonnel']);
+                Route::post('/enterprise/new-user', [PersonnelModuleController::class, 'registerPersonnel']);
             });
 
         Route::middleware([CheckModuleAuthority::parameters('personnel', 'read')])
             ->group(function () {
-                Route::get('/enterprise/getPersonnel', [PersonnelModuleController::class, 'getPersonnel']);
+                Route::get('/enterprise/get-personnel', [PersonnelModuleController::class, 'getPersonnel']);
             });
     }
 );
