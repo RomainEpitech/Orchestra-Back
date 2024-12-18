@@ -168,4 +168,52 @@ class PersonnelModuleController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Delete a user from enterprise
+     */
+    public function destroyPersonnel(Request $request, string $uuid): JsonResponse
+    {
+        try {
+            $user = $request->enterprise->users()
+                ->where('uuid', $uuid)
+                ->first();
+
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not found in this enterprise'
+                ], 404);
+            }
+
+            // Empêcher la suppression de l'owner de l'entreprise
+            if ($request->enterprise->owner_uuid === $user->uuid) {
+                return response()->json([
+                    'message' => 'Cannot delete the enterprise owner'
+                ], 403);
+            }
+
+            // Empêcher l'auto-suppression
+            if ($request->user()->uuid === $user->uuid) {
+                return response()->json([
+                    'message' => 'Cannot delete your own account'
+                ], 403);
+            }
+
+            DB::transaction(function () use ($user) {
+                // Supprimer les relations de l'utilisateur avant de le supprimer
+                // Ex: participations aux événements, absences, etc.
+                $user->delete();
+            });
+
+            return response()->json([
+                'message' => 'User deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error deleting user',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
