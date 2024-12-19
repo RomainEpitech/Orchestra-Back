@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PersonnelModuleController extends Controller
@@ -212,6 +213,127 @@ class PersonnelModuleController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error deleting user',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a user from enterprise
+     */
+    public function updatePersonnel(Request $request, string $uuid): JsonResponse
+    {
+        try {
+            // Trouver l'utilisateur
+            $user = $request->enterprise->users()
+                ->where('uuid', $uuid)
+                ->first();
+
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not found in this enterprise'
+                ], 404);
+            }
+
+            // Valider seulement les champs présents dans la requête
+            $validationRules = [];
+            $dataToUpdate = [];
+
+            // First Name
+            if ($request->has('first_name')) {
+                $validationRules['first_name'] = 'required|string|max:255';
+                $dataToUpdate['first_name'] = $request->first_name;
+            }
+
+            // Last Name
+            if ($request->has('last_name')) {
+                $validationRules['last_name'] = 'required|string|max:255';
+                $dataToUpdate['last_name'] = $request->last_name;
+            }
+
+            // Email (avec vérification d'unicité en excluant l'utilisateur actuel)
+            if ($request->has('email')) {
+                $validationRules['email'] = [
+                    'required',
+                    'email',
+                    Rule::unique('users')->ignore($user->uuid, 'uuid')
+                ];
+                $dataToUpdate['email'] = $request->email;
+            }
+
+            // Role
+            if ($request->has('role_uuid')) {
+                $validationRules['role_uuid'] = 'required|uuid|exists:roles,uuid';
+                
+                // Vérifier que le rôle appartient à l'entreprise ou est un rôle par défaut
+                $role = Role::where('uuid', $request->role_uuid)
+                    ->where(function($query) use ($request) {
+                        $query->where('enterprise_uuid', $request->enterprise->uuid)
+                            ->orWhereNull('enterprise_uuid');
+                    })->first();
+
+                if (!$role) {
+                    return response()->json([
+                        'message' => 'Invalid role for this enterprise'
+                    ], 422);
+                }
+
+                $dataToUpdate['role_uuid'] = $request->role_uuid;
+            }
+
+            // Status
+            if ($request->has('status')) {
+                $validationRules['status'] = 'required|boolean';
+                $dataToUpdate['status'] = $request->status;
+            }
+
+            // Leave days
+            if ($request->has('leave_days')) {
+                $validationRules['leave_days'] = 'required|integer|min:0';
+                $dataToUpdate['leave_days'] = $request->leave_days;
+            }
+
+            // Si aucun champ à mettre à jour
+            if (empty($dataToUpdate)) {
+                return response()->json([
+                    'message' => 'No fields to update'
+                ], 422);
+            }
+
+            // Valider les données
+            $validated = $request->validate($validationRules);
+
+            // Mettre à jour uniquement les champs modifiés
+            $user->update($dataToUpdate);
+
+            // Charger les relations nécessaires pour la réponse
+            $user->load('role:uuid,name,color_hex');
+
+            return response()->json([
+                'message' => 'User updated successfully',
+                'user' => [
+                    'uuid' => $user->uuid,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'status' => $user->status,
+                    'leave_days' => $user->leave_days,
+                    'joined_at' => $user->joined_at->format('Y-m-d'),
+                    'role' => [
+                        'name' => $user->role->name,
+                        'color_hex' => $user->role->color_hex
+                    ]
+                ]
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error updating user',
                 'error' => $e->getMessage()
             ], 500);
         }

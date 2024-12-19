@@ -39,5 +39,10 @@ Route::middleware(['auth:sanctum', CheckEnterpriseKey::class, CheckEnterpriseMem
             ->group(function () {
                 Route::delete('/enterprise/delete-personnel/{uuid}', [PersonnelModuleController::class, 'destroyPersonnel']);
             });
+        
+        Route::middleware([CheckModuleAuthority::parameters('personnel', 'edit')])
+            ->group(function () {
+                Route::put('/enterprise/update-personnel/{uuid}', [PersonnelModuleController::class, 'updatePersonnel']);
+            });
     }
 );
