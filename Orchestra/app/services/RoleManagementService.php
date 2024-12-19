@@ -13,9 +13,23 @@ class RoleManagementService
         private AuthorityProcessingService $authorityService
     ) {}
 
-    public function createRole(array $data, Enterprise $enterprise): Role
+    public function createRole(array $data, Enterprise $enterprise, bool $isModulePurchased): Role
     {
-        $this->checkRoleLimit($enterprise);
+        if (!$isModulePurchased) {
+            // Récupérer le module et ses limites
+            $module = $enterprise->modules()
+                ->where('key', 'roles')
+                ->first();
+
+            if ($module) {
+                $currentCount = $enterprise->roles()->count();
+                $maxRoles = $module->limits?->free_limit['maxRoles'] ?? null;
+
+                if ($maxRoles && $currentCount >= $maxRoles) {
+                    throw new RoleLimitExceededException($currentCount, $maxRoles);
+                }
+            }
+        }
 
         return DB::transaction(function () use ($data, $enterprise) {
             return Role::create([
@@ -25,19 +39,5 @@ class RoleManagementService
                 'authority' => $this->authorityService->process($data['authority'] ?? [])
             ]);
         });
-    }
-
-    private function checkRoleLimit(Enterprise $enterprise): void
-    {
-        $currentRolesCount = $enterprise->roles()->count();
-        $moduleLimit = $enterprise->modules()
-            ->where('key', 'roles')
-            ->first()
-            ->limits
-            ?->free_limit['maxRoles'] ?? null;
-
-        if ($moduleLimit && $currentRolesCount >= $moduleLimit) {
-            throw new RoleLimitExceededException($currentRolesCount, $moduleLimit);
-        }
     }
 }
