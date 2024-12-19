@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Role;
 use App\Services\RoleManagementService;
 use App\Exceptions\RoleLimitExceededException;
+use App\Services\ModulePurchaseCheckerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -14,22 +15,16 @@ use Illuminate\Validation\ValidationException;
 class RoleModuleController extends Controller 
 {
     public function __construct(
-        private RoleManagementService $roleService
+        private RoleManagementService $roleService,
+        private ModulePurchaseCheckerService $purchaseChecker
     ) {}
 
     public function newRole(Request $request): JsonResponse
     {
         try {
-            // Récupérer les limites du module
-            $moduleLimits = $request->enterprise->modules()
-                ->where('key', 'roles')
-                ->first()
-                ->limits
-                ?->free_limit;
+            $isModulePurchased = $this->purchaseChecker->isModulePurchased($request->enterprise, 'roles');
 
-            $availableColors = $moduleLimits['availableColors'] ?? [];
-
-            $validated = Validator::make($request->all(), [
+            $validationRules = [
                 'name' => [
                     'required',
                     'string',
@@ -40,17 +35,29 @@ class RoleModuleController extends Controller
                 'color_hex' => [
                     'required',
                     'string',
-                    'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/',
-                    Rule::in($availableColors)
+                    'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'
                 ],
                 'authority' => 'present|array'
-            ], [
+            ];
+
+            if (!$isModulePurchased) {
+                $module = $request->enterprise->modules()
+                    ->where('key', 'roles')
+                    ->first();
+
+                if ($module && isset($module->limits?->free_limit['availableColors'])) {
+                    $validationRules['color_hex'][] = Rule::in($module->limits->free_limit['availableColors']);
+                }
+            }
+
+            $validated = Validator::make($request->all(), $validationRules, [
                 'color_hex.in' => 'The selected color is not available in your subscription plan.'
             ])->validate();
 
             $role = $this->roleService->createRole(
                 $validated,
-                $request->enterprise
+                $request->enterprise,
+                $isModulePurchased
             );
 
             return response()->json([
