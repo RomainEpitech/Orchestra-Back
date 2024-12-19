@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EnterpriseController;
 use App\Http\Controllers\PersonnelModuleController;
+use App\Http\Controllers\UserController;
 use App\Http\Middleware\CheckEnterpriseKey;
 use App\Http\Middleware\CheckEnterpriseMembership;
 use App\Http\Middleware\CheckModuleAuthority;
@@ -44,5 +45,8 @@ Route::middleware(['auth:sanctum', CheckEnterpriseKey::class, CheckEnterpriseMem
             ->group(function () {
                 Route::put('/enterprise/update-personnel/{uuid}', [PersonnelModuleController::class, 'updatePersonnel']);
             });
+
+        Route::get('/me', [UserController::class, 'me']);
+        Route::put('/update-me', [UserController::class, 'update']);
     }
 );
